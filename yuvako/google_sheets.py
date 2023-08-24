@@ -1,19 +1,3 @@
-# import gspread
-# from oauth2client.service_account import ServiceAccountCredentials
-
-# def add_to_google_sheet(data):
-#     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-#     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-#     client = gspread.authorize(creds)
-
-#     spreadsheet = client.open("Sabha Attendance BLR")
-#     worksheet = spreadsheet.get_worksheet(0)  # Choose the correct worksheet index
-
-#     worksheet.append_row(data)
-
-
-
-# yuvako/google_sheets.py
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
@@ -36,18 +20,16 @@ def update_yuvako_in_sheet(MobileNumber, updated_data):
     creds = ServiceAccountCredentials.from_json_keyfile_name("P:\\Python\\Projects\\credentials.json", scope)
     client = gspread.authorize(creds)
 
-    spreadsheet = client.open("Sabha BLR")  # Change to your spreadsheet title
-    worksheet = spreadsheet.get_worksheet(0)  # Choose the correct worksheet index
+    spreadsheet = client.open("Sabha BLR")  
+    worksheet = spreadsheet.get_worksheet(0)  
 
-    # Find the row index based on the MobileNumber
-    all_records = worksheet.get_all_records()  # Fetch all records as dictionaries
+    all_records = worksheet.get_all_records()
     row_index = None
-    for index, record in enumerate(all_records, start=2):  # Assuming header is in row 1
-        if record["Mobile Number"] == MobileNumber: 
+    for index, record in enumerate(all_records, start=2): 
+        if record["MobileNumber"] == MobileNumber: 
             row_index = index
             break
 
     if row_index is not None:
-        # Update the cells in the row with the updated data
-        cell_range = f"A{row_index}:F{row_index}"  # Assuming columns A to F need to be updated
+        cell_range = f"A{row_index}:F{row_index}" 
         worksheet.update(cell_range, [list(updated_data.values())])

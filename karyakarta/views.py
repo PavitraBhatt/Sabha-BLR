@@ -42,4 +42,26 @@ class LoginView(APIView):
             return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
         else:
             return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-        
+    
+
+@csrf_exempt       
+def kk_get(request): 
+    
+    if request.method == 'GET':
+        json_data = request.body
+        stream = io.BytesIO(json_data)
+        # pythondata = JSONParser().parse(stream)
+        decoded_data = stream.getvalue().decode('utf-8')
+        pythondata = json.dumps(decoded_data)
+        # id = pythondata.get('id',None)
+        id = pythondata.get('id', None) if isinstance(pythondata, dict) else None
+
+        if id is not None:
+            kk = Karyakarta.objects.get(id=id)
+            serializer = KaryakartaSerializer(kk)
+            json_data = JSONRenderer().render(serializer.data)
+            return HttpResponse(json_data,content_type ='application/json')
+        kk = Karyakarta.objects.all()
+        serializer = KaryakartaSerializer(kk,many=True)
+        json_data = JSONRenderer().render(serializer.data)
+        return HttpResponse(json_data,content_type ='application/json')

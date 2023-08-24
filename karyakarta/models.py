@@ -4,4 +4,4 @@ from django.db import models
 
 class Karyakarta(models.Model):
     username = models.CharField(max_length=255)
-    hashed_password = models.BinaryField()  # Store hashed password as bytes
+    hashed_password = models.BinaryField()  # Store hashed password as bytes 
