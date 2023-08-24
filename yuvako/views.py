@@ -53,35 +53,52 @@ def yuvako_get(request):
 #         json_data = JSONRenderer().render(serializer.data)
 #         return HttpResponse(json_data, content_type='application/json')
 
+from django.db import IntegrityError
+
 @csrf_exempt
 def yuvak_post(request):
     if request.method == 'POST':
         json_data = request.body
         stream = io.BytesIO(json_data)
         pythondata = JSONParser().parse(stream)
-        serializer =YuvakoSerializer(data = pythondata)
+        serializer = YuvakoSerializer(data=pythondata)
         
-        if serializer.is_valid():
-            serializer.save()
-            yuvako_data = [
-                serializer.validated_data["FirstName"],
-                serializer.validated_data["LastName"],
-                serializer.validated_data["DOB"].strftime("%Y-%m-%d"),  # Convert date to string
-                serializer.validated_data["Area"],
-                serializer.validated_data["ReferenceName"],
-                serializer.validated_data["ReferenceName"]
-            ]
-            
-            add_yuvako_to_sheet(yuvako_data)
-            res = {'msg':'Data Created Succesfully!'}
-            json_data = JSONRenderer().render(res)
-            return HttpResponse(json_data,content_type = 'application/json', status = status.HTTP_201_CREATED)
-            
-        else :
-            json_data = JSONRenderer().render(serializer.errors)
-            return HttpResponse(json_data,content_type = 'application/json')
+        try:
+            if serializer.is_valid():
+                serializer.save()
+                yuvako_data = [
+                    serializer.validated_data["FirstName"],
+                    serializer.validated_data["LastName"],
+                    serializer.validated_data["MobileNumber"],
+                    serializer.validated_data["DOB"].strftime("%Y-%m-%d"),  # Convert date to string
+                    serializer.validated_data["Area"],
+                    serializer.validated_data["ReferenceName"],
+                    serializer.validated_data["ReferenceName"]
+                ]
+                
+                add_yuvako_to_sheet(yuvako_data)
+                res = {'msg': 'Data Created Successfully!'}
+                json_data = JSONRenderer().render(res)
+                return HttpResponse(json_data, content_type='application/json', status=status.HTTP_201_CREATED)
+                
+            else:
+                json_data = JSONRenderer().render(serializer.errors)
+                json_str = json_data.decode('utf-8')
+                error_dict = json.loads(json_str)
+                return JsonResponse(error_dict, status=status.HTTP_400_BAD_REQUEST, safe=False)
         
+        except IntegrityError as e:
+            # Handle duplicate MobileNumber error
+            error_msg = "Duplicate MobileNumber. This number already exists."
+            return JsonResponse({"error": error_msg}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            # Handle other exceptions
+            error_msg = "An error occurred while processing your request."
+            return JsonResponse({"error": error_msg}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        
+      
 # from rest_framework.views import APIView
 # from rest_framework.response import Response
 # from .serializers import YuvakoSerializer
@@ -97,18 +114,44 @@ from .google_sheets import add_yuvako_to_sheet
 #         return Response(serializer.errors, status=400)
     
 
+import io
+from rest_framework.parsers import JSONParser
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.http import HttpResponse
+from .serializers import YuvakoSerializer
+from .google_sheets import update_yuvako_in_sheet
 
-@csrf_exempt
-def yuvak_update(request, id):
+@api_view(['POST'])
+def update_yuvako(request, MobileNumber):
     try:
-        yuvak_obj = Yuvako.objects.get(id=id)
+        yuvako = Yuvako.objects.get(MobileNumber=MobileNumber)
     except Yuvako.DoesNotExist:
-        return HttpResponse(status=404)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'POST':
-        data = JSONParser().parse(request)
-        serializer = YuvakoSerializer(yuvak_obj, data=data)
+        json_data = request.body
+        stream = io.BytesIO(json_data)
+        pythondata = JSONParser().parse(stream)
+        serializer = YuvakoSerializer(yuvako, data=pythondata, partial=True)
+        
         if serializer.is_valid():
             serializer.save()
-            return JsonResponse(serializer.data)
-        return JsonResponse(serializer.errors, status=400)
+
+           
+            updated_data = {
+                "FirstName": serializer.validated_data["FirstName"],
+                "LastName": serializer.validated_data["LastName"],
+                "MobileNumber": serializer.validated_data["MobileNumber"],
+                "DOB": serializer.validated_data["DOB"].strftime("%Y-%m-%d"),  # Convert date to string
+                "Area": serializer.validated_data["Area"],
+                "ReferenceName": serializer.validated_data["ReferenceName"],
+            }
+
+            update_yuvako_in_sheet(MobileNumber, updated_data)
+
+            return Response({'msg': 'Data Updated Successfully!'}, status=status.HTTP_200_OK)
+            
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -4,6 +4,7 @@ from .models import Yuvako
 class YuvakoSerializer(serializers.Serializer):
     FirstName = serializers.CharField(max_length=100)
     LastName = serializers.CharField(max_length=100)
+    MobileNumber = serializers.IntegerField()
     DOB = serializers.DateField()
     Area = serializers.CharField(max_length=100)
     ReferenceName = serializers.CharField(max_length=100)
@@ -16,6 +17,7 @@ class YuvakoSerializer(serializers.Serializer):
         instance.FirstName = validated_data.get('FirstName',instance.FirstName)
         instance.LastName = validated_data.get('LastName',instance.LastName)
         instance.DOB = validated_data.get('DOB',instance.DOB)
+        instance.MobileNumber = validated_data.get('MobileNumber',instance.MobileNumber)
         instance.Area = validated_data.get('Area',instance.Area)
         instance.ReferenceName = validated_data.get('ReferenceName',instance.ReferenceName)
         instance.Coming = validated_data.get('Coming',instance.Coming)
